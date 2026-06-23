@@ -4,6 +4,8 @@ import { db } from "../db";
 import { cameras } from "../db/schema";
 import { requireAuth } from "../auth/middleware";
 import { publishCommand } from "../realtime/channels";
+import { invalidateOwner } from "../realtime/connections";
+import { requestAnswer } from "../realtime/signaling";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -90,7 +92,27 @@ cameraRoutes.delete("/:id", async (c) => {
     ts: new Date().toISOString(),
   });
   await db.delete(cameras).where(eq(cameras.id, cam.id));
+  invalidateOwner(cam.id);
   return c.body(null, 204);
+});
+
+// WebRTC signaling: browser POSTs its SDP offer, we relay to the worker over
+// Redis and return the worker's SDP answer. See realtime/signaling.ts.
+cameraRoutes.post("/:id/webrtc", async (c) => {
+  const cam = await getOwned(c.get("userId"), c.req.param("id"));
+  if (!cam) return c.json({ error: "not found" }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  const offer = body?.sdp;
+  if (!offer || typeof offer !== "string") {
+    return c.json({ error: "sdp offer required" }, 400);
+  }
+
+  const answer = await requestAnswer(cam.id, offer);
+  if (answer.error || !answer.sdp) {
+    return c.json({ error: answer.error ?? "no answer" }, 504);
+  }
+  return c.json({ type: "answer", sdp: answer.sdp });
 });
 
 cameraRoutes.post("/:id/start", async (c) => {
