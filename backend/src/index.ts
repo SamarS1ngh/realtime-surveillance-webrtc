@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { env } from "./env";
 import { authRoutes } from "./auth/routes";
+import { cameraRoutes } from "./cameras/routes";
 import { requireAuth } from "./auth/middleware";
 
 const app = new Hono();
@@ -12,6 +13,7 @@ app.use("*", cors());
 app.get("/health", (c) => c.json({ ok: true }));
 
 app.route("/auth", authRoutes);
+app.route("/cameras", cameraRoutes);
 
 // Sanity-check protected route. Camera + alert routers mount here in later commits.
 app.get("/me", requireAuth, (c) =>
