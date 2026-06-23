@@ -85,14 +85,41 @@ cp .env.example .env        # defaults work out of the box
 docker compose up --build
 ```
 
-Then:
+Then open http://localhost:3000 and log in with the seeded demo account:
+
+```
+username: demo
+password: demo12345
+```
+
+A demo camera pointing at the looped sample clip is pre-seeded — hit **Start** on
+its tile to see live WebRTC video with person boxes, plus alerts and FPS/det-min
+updating live. You can also add your own camera (any RTSP URL).
 
 - Frontend → http://localhost:3000
-- API      → http://localhost:8080
-- A demo camera pointing at the looped sample stream is seeded; sign up, log in,
-  hit **Start** on the tile.
+- API → http://localhost:8080
+- Seeded RTSP source → `rtsp://localhost:8554/cam` (ffmpeg loops `infra/sample/people.mp4`)
 
-Default seeded login is printed in the API logs on first boot.
+### A note on WebRTC + Docker networking
+
+The worker runs with `network_mode: host` on purpose: WebRTC needs the worker's
+ICE candidates to be addresses the browser can actually reach. On the host
+network those are the host's address (browser is on the same machine), so media
+flows. The trade-off is the worker reaches Redis/RTSP via `localhost` + their
+published ports — hence the seeded camera URL is `rtsp://localhost:8554/cam`. For
+a multi-host deployment you'd add a TURN server and put the worker on the shared
+network instead.
+
+## Tests
+
+```bash
+# backend — jwt unit tests + api integration (integration self-skips without a DB)
+cd backend && bun test
+DATABASE_URL=postgres://vms:vms_dev_pw@localhost:5432/vms bun test   # full
+
+# worker — dedup + event-format logic (pure, no ML deps needed)
+cd worker && python -m unittest discover -s tests -v
+```
 
 ## Project layout
 
