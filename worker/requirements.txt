@@ -1,3 +1,6 @@
+# NOTE: torch/torchvision (CPU build) are installed in the Dockerfile from the
+# pytorch CPU wheel index before this file, so ultralytics reuses them instead
+# of pulling the multi-GB CUDA build.
 aiortc==1.9.0
 av==12.3.0
 opencv-python-headless==4.10.0.84

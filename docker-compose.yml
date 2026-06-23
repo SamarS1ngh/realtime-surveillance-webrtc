@@ -25,18 +25,34 @@ services:
     ports:
       - "6379:6379"
 
-  # Loops a sample file as an RTSP source so no real camera is needed.
+  # RTSP server. The `cam` path is fed by the streamer below.
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:1.9.3
     volumes:
       - ./infra/mediamtx.yml:/mediamtx.yml
-      - ./infra/sample:/sample
     ports:
       - "8554:8554"
+
+  # Loops the bundled sample clip into mediamtx as a fake RTSP camera, so no
+  # real hardware is needed. `-c copy` = no re-encode (the clip is already H.264).
+  streamer:
+    image: jrottenberg/ffmpeg:6.1-ubuntu
+    depends_on:
+      - mediamtx
+    volumes:
+      - ./infra/sample:/sample:ro
+    command: >
+      -re -stream_loop -1 -i /sample/people.mp4 -c copy
+      -f rtsp -rtsp_transport tcp rtsp://mediamtx:8554/cam
+    restart: unless-stopped
 
   backend:
     build: ./backend
     env_file: .env
+    # The worker runs on the host network (see worker note), so the camera it
+    # dials must be reachable via the host-published RTSP port.
+    environment:
+      SEED_RTSP_URL: rtsp://localhost:8554/cam
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,16 +61,21 @@ services:
     ports:
       - "8080:8080"
 
+  # Host networking on purpose: WebRTC media needs the worker's ICE candidates
+  # to be reachable by the browser. On the host network the candidates are the
+  # host's address, which the browser (same machine) can reach. The trade-off is
+  # the worker addresses Redis/API via localhost + their published ports.
   worker:
     build: ./worker
+    network_mode: host
     env_file: .env
+    environment:
+      REDIS_URL: redis://localhost:6379
+      API_BASE_URL: http://localhost:8080
     depends_on:
       - redis
       - mediamtx
       - backend
-    # WebRTC needs a predictable UDP port range for media; host networking
-    # is the simplest reliable option for local dev.
-    network_mode: host
 
   frontend:
     build: ./frontend

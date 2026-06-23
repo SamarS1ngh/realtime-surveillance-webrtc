@@ -1,0 +1,8 @@
+# Minimal mediamtx config. The `cam` path accepts a publisher — the ffmpeg
+# `streamer` service loops the bundled sample clip into it. The worker reads it
+# as rtsp://<host>:8554/cam. Keys kept minimal so they stay valid across
+# mediamtx releases.
+logLevel: info
+paths:
+  cam:
+    source: publisher

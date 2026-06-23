@@ -27,5 +27,6 @@ venv/
 .vscode/
 *.log
 
-# media samples (large; documented how to fetch)
+# media samples (large) — but keep the small committed demo clip
 infra/sample/*.mp4
+!infra/sample/people.mp4
