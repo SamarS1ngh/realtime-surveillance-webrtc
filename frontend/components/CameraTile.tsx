@@ -96,6 +96,15 @@ export function CameraTile({
 
   useEffect(() => () => pcRef.current?.close(), []);
 
+  // Auto-connect WebRTC when the camera is already running (page reload, or
+  // another session started it). Without this the tile shows "stream stopped"
+  // until the user clicks Start, even though detection is live over the WS.
+  // Guarded by pcRef so we never open a second peer connection.
+  useEffect(() => {
+    if (running && !pcRef.current) connectStream();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
+
   return (
     <div className="tile card">
       <div className="tile-head">
