@@ -15,7 +15,22 @@ person bounding boxes plus alerts and FPS/detections-per-minute updating live.
 
 ---
 
+## Screenshots
+
+Live person detection — YOLOv8n bounding box burned into the WebRTC stream, with
+alerts and FPS / detections-per-minute updating in real time:
+
+![Live person detection with bounding box](docs/screenshots/03-live-detection.png)
+
+| Dashboard (stopped) | Live WebRTC stream |
+|---|---|
+| ![Dashboard with alert history](docs/screenshots/01-dashboard.png) | ![Live stream](docs/screenshots/02-live-stream.png) |
+
+---
+
 ## Table of contents
+
+- [Screenshots](#screenshots)
 
 - [Architecture](#architecture)
 - [Requirement coverage](#requirement-coverage)
